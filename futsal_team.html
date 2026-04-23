@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>풋살 팀 편성</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+.container{max-width:700px;margin:0 auto;padding:2rem 1.25rem}
+h1{font-size:20px;font-weight:600;margin-bottom:1.75rem;color:#1a1a1a}
+.section-label{font-size:11px;font-weight:600;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-bottom:1rem}
+.player-card{background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:9px 12px;cursor:pointer;transition:border-color .12s,background .12s;user-select:none;position:relative}
+.player-card:hover{border-color:#bbb}
+.player-card.checked{background:#eef5ff;border-color:#4a90d9}
+.player-card.checked .pname{color:#2563a8}
+.player-card.guest{border-style:dashed}
+.pname{font-size:14px;font-weight:600;color:#1a1a1a}
+.guest-tag{font-size:10px;color:#aaa;margin-top:2px}
+.player-card.checked .guest-tag{color:#4a90d9;opacity:.8}
+.del-btn{position:absolute;top:5px;right:7px;font-size:12px;color:#ccc;cursor:pointer;background:none;border:none;padding:0;font-family:inherit;line-height:1}
+.del-btn:hover{color:#e24b4a}
+.add-area{background:#f0f0ee;border-radius:10px;padding:14px 16px;margin-bottom:1.25rem}
+.add-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.add-row input{flex:1;min-width:100px;padding:8px 10px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-size:14px;font-family:inherit;outline:none}
+.add-row input:focus{border-color:#4a90d9}
+.add-row input::placeholder{color:#bbb}
+.tier-group{display:flex;gap:4px}
+.tier-btn{padding:7px 13px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#888;font-size:13px;cursor:pointer;font-family:inherit;transition:all .12s}
+.tier-btn:hover{border-color:#999;color:#333}
+.tier-btn.sel-상{background:#eef5ff;border-color:#4a90d9;color:#2563a8;font-weight:600}
+.tier-btn.sel-중{background:#fef3e2;border-color:#c08010;color:#7a5200;font-weight:600}
+.tier-btn.sel-하{background:#f0f0f0;border-color:#999;color:#444;font-weight:600}
+.btn-add{padding:8px 14px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#333;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;font-weight:500}
+.btn-add:hover{background:#eee}
+.btn-row{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid #e0e0e0;background:#fff;color:#333;font-size:13px;cursor:pointer;font-family:inherit}
+.btn:hover{background:#f0f0ee}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:600;font-size:15px;padding:10px 28px;border-radius:8px;cursor:pointer;font-family:inherit}
+.btn-primary:hover{background:#333;border-color:#333}
+.tc-row{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.tc-btn{padding:8px 22px;border-radius:8px;border:1px solid #e0e0e0;background:#fff;color:#888;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .12s}
+.tc-btn:hover{border-color:#999;color:#333}
+.tc-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.divider{height:1px;background:#e8e8e6;margin:1.25rem 0}
+.result-area{display:none;margin-top:1.75rem}
+.balance-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.balance-bar{flex:1;height:6px;border-radius:3px;background:#e5e5e5;overflow:hidden}
+.balance-fill{height:100%;border-radius:3px;transition:width .4s}
+.balance-label{font-size:12px;color:#888;white-space:nowrap}
+.teams-grid{display:grid;gap:10px}
+.team-card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:1rem 1.25rem}
+.team-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0f0ee}
+.team-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.team-name{font-size:15px;font-weight:600;color:#1a1a1a}
+.team-count{font-size:12px;color:#aaa;margin-left:auto}
+.player-row{display:flex;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f3}
+.player-row:last-child{border-bottom:none}
+.player-row span{font-size:14px;color:#1a1a1a}
+.guest-mark{font-size:11px;color:#aaa;margin-left:5px;font-weight:400}
+.shuffle-note{font-size:12px;color:#bbb;margin-top:12px}
+.count-chip{font-size:12px;color:#888;font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>풋살 팀 편성</h1>
+
+<div class="section-label">참석자 선택 <span class="count-chip" id="countChip"></span></div>
+<div class="player-grid" id="playerGrid"></div>
+
+<div class="btn-row">
+  <button class="btn" onclick="toggleAll(true)">전체 선택</button>
+  <button class="btn" onclick="toggleAll(false)">전체 해제</button>
+</div>
+
+<div class="add-area">
+  <div class="section-label" style="margin-bottom:10px">긴급 선수 추가</div>
+  <div class="add-row">
+    <input type="text" id="guestName" placeholder="이름 입력" maxlength="10" onkeydown="if(event.key==='Enter')addGuest()"/>
+    <div class="tier-group">
+      <button class="tier-btn" data-tier="상" onclick="selectTier(this)">상</button>
+      <button class="tier-btn" data-tier="중" onclick="selectTier(this)">중</button>
+      <button class="tier-btn" data-tier="하" onclick="selectTier(this)">하</button>
+    </div>
+    <button class="btn-add" onclick="addGuest()">+ 추가</button>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="section-label" style="margin-bottom:10px">팀 수</div>
+<div class="tc-row">
+  <button class="tc-btn" data-n="2" onclick="setTeamCount(2)">2팀</button>
+  <button class="tc-btn active" data-n="3" onclick="setTeamCount(3)">3팀</button>
+  <button class="tc-btn" data-n="4" onclick="setTeamCount(4)">4팀</button>
+  <button class="tc-btn" data-n="5" onclick="setTeamCount(5)">5팀</button>
+  <button class="tc-btn" data-n="6" onclick="setTeamCount(6)">6팀</button>
+</div>
+
+<div class="divider"></div>
+<button class="btn-primary" onclick="buildTeams()">팀 편성하기</button>
+
+<div class="result-area" id="resultArea">
+  <div class="section-label" style="margin-bottom:10px">편성 결과</div>
+  <div class="balance-row">
+    <div class="balance-bar"><div class="balance-fill" id="balanceFill"></div></div>
+    <span class="balance-label" id="balanceLabel"></span>
+  </div>
+  <div class="teams-grid" id="teamsGrid"></div>
+  <p class="shuffle-note">* 버튼을 다시 누르면 새로운 최적 배합으로 편성됩니다</p>
+</div>
+</div>
+
+<script>
+const TIER_SCORE={상:39,중:33,하:27};
+const COLORS=['#378ADD','#1D9E75','#D85A30','#9F4DB8','#BA7517','#639922'];
+const BASE_PLAYERS=[
+  {name:"금성환",score:33,guest:false},{name:"김강우",score:33,guest:false},
+  {name:"김기수",score:36,guest:false},{name:"김대훈",score:27,guest:false},
+  {name:"최세영",score:39,guest:false},{name:"김인겸",score:33,guest:false},
+  {name:"김재근",score:36,guest:false},{name:"김현기",score:33,guest:false},
+  {name:"김현식",score:39,guest:false},{name:"박유성",score:30,guest:false},
+  {name:"신성철",score:36,guest:false},{name:"신진성",score:36,guest:false},
+  {name:"신현교",score:39,guest:false},{name:"오승원",score:33,guest:false},
+  {name:"오원근",score:33,guest:false},{name:"유동균",score:30,guest:false},
+  {name:"윤승진",score:33,guest:false},{name:"이기원",score:39,guest:false},
+  {name:"이승찬",score:33,guest:false},{name:"이용우",score:39,guest:false},
+  {name:"이종호",score:39,guest:false},{name:"임세혁",score:30,guest:false},
+  {name:"최규현",score:39,guest:false},{name:"최동견",score:39,guest:false},
+  {name:"최용성",score:39,guest:false},{name:"최효수",score:30,guest:false},
+  {name:"이동훈",score:33,guest:false},{name:"금덕환",score:33,guest:false},
+  {name:"장성훈",score:33,guest:false},{name:"박주호",score:39,guest:false},
+  {name:"종호친구",score:36,guest:false},{name:"김성환",score:18,guest:false}
+];
+let players=BASE_PLAYERS.map(p=>({...p}));
+let selected=new Set(players.map(p=>p.name));
+let teamCount=3,selectedTier='중';
+
+function init(){selectTierByVal('중');renderGrid();}
+function renderGrid(){
+  const g=document.getElementById('playerGrid');
+  g.innerHTML='';
+  players.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='player-card'+(selected.has(p.name)?' checked':'')+(p.guest?' guest':'');
+    d.innerHTML=`<div class="pname">${p.name}</div>`
+      +(p.guest?`<div class="guest-tag">긴급</div>`:'')
+      +(p.guest?`<button class="del-btn" onclick="removeGuest(event,'${p.name}')">✕</button>`:'');
+    d.onclick=e=>{
+      if(e.target.classList.contains('del-btn'))return;
+      selected.has(p.name)?selected.delete(p.name):selected.add(p.name);
+      d.classList.toggle('checked',selected.has(p.name));
+      updateCount();
+    };
+    g.appendChild(d);
+  });
+  updateCount();
+}
+function toggleAll(on){players.forEach(p=>on?selected.add(p.name):selected.delete(p.name));renderGrid();}
+function updateCount(){document.getElementById('countChip').textContent=selected.size+'명 참석';}
+function selectTier(btn){selectedTier=btn.dataset.tier;selectTierByVal(selectedTier);}
+function selectTierByVal(tier){
+  document.querySelectorAll('.tier-btn').forEach(b=>{b.className='tier-btn'+(b.dataset.tier===tier?' sel-'+tier:'');});
+  selectedTier=tier;
+}
+function addGuest(){
+  const inp=document.getElementById('guestName');
+  const name=inp.value.trim();
+  if(!name){inp.focus();return;}
+  if(players.find(p=>p.name===name)){alert('이미 있는 이름입니다.');return;}
+  players.push({name,score:TIER_SCORE[selectedTier],guest:true});
+  selected.add(name);inp.value='';renderGrid();
+}
+function removeGuest(e,name){
+  e.stopPropagation();
+  players=players.filter(p=>p.name!==name);
+  selected.delete(name);renderGrid();
+}
+function setTeamCount(n){
+  teamCount=n;
+  document.querySelectorAll('.tc-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.n)===n));
+}
+function buildTeams(){
+  const n=teamCount;
+  const pool=players.filter(p=>selected.has(p.name));
+  if(pool.length<n){alert(`참석자(${pool.length}명)가 팀 수(${n}팀)보다 적습니다.`);return;}
+  let best=null,bestDiff=Infinity;
+  for(let t=0;t<3000;t++){
+    const sh=[...pool].sort(()=>Math.random()-.5);
+    const teams=Array.from({length:n},()=>[]);
+    const sums=new Array(n).fill(0);
+    sh.forEach(p=>{const i=sums.indexOf(Math.min(...sums));teams[i].push(p);sums[i]+=p.score;});
+    const diff=Math.max(...sums)-Math.min(...sums);
+    if(diff<bestDiff){bestDiff=diff;best={teams,sums};}
+    if(diff===0)break;
+  }
+  const{teams,sums}=best;
+  const maxS=Math.max(...sums),minS=Math.min(...sums);
+  const pct=maxS>0?Math.round((1-(maxS-minS)/maxS)*100):100;
+  const fc=pct>=90?'#1D9E75':pct>=75?'#BA7517':'#E24B4A';
+  document.getElementById('balanceFill').style.cssText=`width:${pct}%;background:${fc}`;
+  document.getElementById('balanceLabel').textContent=`균형 ${pct}% (최대차 ${maxS-minS}점)`;
+  const cols=n<=3?n:2;
+  const grid=document.getElementById('teamsGrid');
+  grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;
+  grid.innerHTML=teams.map((t,i)=>`
+    <div class="team-card">
+      <div class="team-header">
+        <div class="team-dot" style="background:${COLORS[i%COLORS.length]}"></div>
+        <span class="team-name">${i+1}팀</span>
+        <span class="team-count">${t.length}명</span>
+      </div>
+      ${t.sort((a,b)=>b.score-a.score).map(p=>`
+        <div class="player-row"><span>${p.name}${p.guest?'<span class="guest-mark">긴급</span>':''}</span></div>
+      `).join('')}
+    </div>`).join('');
+  document.getElementById('resultArea').style.display='block';
+  document.getElementById('resultArea').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+init();
+</script>
+</body>
+</html>
